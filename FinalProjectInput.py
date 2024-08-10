@@ -54,7 +54,7 @@ class inventoryManager:
             for itemId, item in items: # iterates over each item and writes to csv file
                 writer.writerow([itemId, item['manufacturer'], item['itemType'], item['price'], item['serviceDate'].strftime('%m/%d/%Y'), item['damaged']]) 
 
-    def generateItemTypeInventory(self):
+    def generateItemTypeInventory(self): # creates report for inventory by item type
         types = {} # starts empty dictionary to store items by type
         for itemId, item in self.items.items(): #checks if item is key in types dictionary
             if item['itemType'] not in types: # if not then adds to new list for item type 
@@ -66,3 +66,27 @@ class inventoryManager:
                 writer = csv.writer(f)
                 for itemId, item in items: #iterates over each item and writes to csv file
                     writer.writerow([itemId, item['manufacturer'], item['price'], item['serviceDate'].strftime('%m/%d/%Y'), item['damaged']]) 
+
+    def generatePastServiceDateInventory(self): # creates report for items past service date
+        today = datetime.today() # gets current date and time 
+        items = [(itemId, item) for itemId, item in self.items() if item['serviceDate'] < today] #lists items past service date
+        items = sorted(items, key = lambda x: x[1]['serviceDate']) # sorts by service date
+        with open('PastServiceDateInventory.csv', 'w', newline = '') as f:
+            writer = csv.writer(f)
+            for itemId, item in items: #iterates over items and writes to csv file
+                writer.writerow([itemId, item['manufacturer'], item['itemType'], item['price'], item['serviceDate'].strftime('%m/%d/%Y'), item['damaged']])
+
+    def generateDamagedInventory(self): # creates report of damaged items
+        items = [(itemId, item) for itemId, item in self.items.items() it item['damaged']] #creats list of damaged items
+        items = sorted(items, key = lambda x: x[1]['price'], reverse = True) # sorts by price 
+        with open('DamagededInventory.csv', 'w', newline = '') as f:
+            writer = csv.writer(f)
+            for itemId, item in items: #iterates over items and writes to csv file
+                writer.writerow([itemId, item['manufacturer'], item['itemType'], item['price'], item['serviceDate'].strftime('%m/%d/%Y')])
+
+#main execution 
+if __name__ == "__main__": #check to see if being run directly
+    manager = inventoryManager() #creates  inctance in inventoryManager class
+    manager.loadData('ManufacturerList.csv', 'PriceList.csv', 'ServiceDatesList.csv') # calls load data method to load data from csv files
+    manager.generateReports() # calls generate reports method
+ 
