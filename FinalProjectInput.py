@@ -6,7 +6,7 @@ from datetime import datetime
 
 class inventoryManager:
     def __init__(self):
-        self.item = {} #starts self.items dictionary 
+        self.items = {} #starts self.items dictionary 
 
     def loadData(self, manufacturerFile, priceFile, serviceDateFile): # defines load data method
         self.loadManufacturers(manufacturerFile) # first parameter 
@@ -21,8 +21,7 @@ class inventoryManager:
                 self.items[itemID] = { # adds entry to self.itme dictionary 
                     'manufacturer': manufacturer.strip(),
                     'itemType': itemType.strip(),
-                    'damaged': 'damaged' if damaged and damaged[0].strip().lower() == 'damaged'
-            else ''
+                    'damaged': 'damaged' if damaged and damaged[0].strip().lower() == 'damaged' else ''
                 }
 
     def loadPrices(self, file): 
@@ -39,7 +38,7 @@ class inventoryManager:
             for row in reader:
                 itemId, serviceDate = row # unpacks row into item Id and service date 
                 if itemId in self.items:
-                    self.item[itemId]['serviceDate'] = datetime.strptime(serviceDate.strip(), '%m/%d/%Y') # adds service date to dictionary 
+                    self.items[itemId]['serviceDate'] = datetime.strptime(serviceDate.strip(), '%m/%d/%Y') # adds service date to dictionary 
 
     def generateReports(self): # calls 4 methods to generate inventory reports that will be defined following this
         self.generateFullInventory()
@@ -48,7 +47,7 @@ class inventoryManager:
         self.generateDamagedInventory()
 
     def generateFullInventory(self): #creates report with all inventory items sorted by manufaturer
-        items = sorted(self.items.items(), key=lambda x: x[]['manufacturer']) #sorts items by manufacturer
+        items = sorted(self.items.items(), key=lambda x: x[1]['manufacturer']) #sorts items by manufacturer
         with open('FullInventory.csv', 'w', newline = '') as f:
             writer = csv.writer(f)
             for itemId, item in items: # iterates over each item and writes to csv file
@@ -58,10 +57,11 @@ class inventoryManager:
         types = {} # starts empty dictionary to store items by type
         for itemId, item in self.items.items(): #checks if item is key in types dictionary
             if item['itemType'] not in types: # if not then adds to new list for item type 
-                types[item['itemType']].append((itemId, item))
+                types[item['itemType']] = []
+            types[item['itemType']].append((itemId, item))
 
         for itemType, items in types.items():
-            items = sorted(items, key=lambda x: x[]) #sorts items of each type by ID
+            items = sorted(items, key=lambda x: x[0]) #sorts items of each type by ID
             with open(f'{itemType}Inventory.csv', 'w', newline = '') as f: 
                 writer = csv.writer(f)
                 for itemId, item in items: #iterates over each item and writes to csv file
@@ -69,7 +69,7 @@ class inventoryManager:
 
     def generatePastServiceDateInventory(self): # creates report for items past service date
         today = datetime.today() # gets current date and time 
-        items = [(itemId, item) for itemId, item in self.items() if item['serviceDate'] < today] #lists items past service date
+        items = [(itemId, item) for itemId, item in self.items.items() if item['serviceDate'] < today] #lists items past service date
         items = sorted(items, key = lambda x: x[1]['serviceDate']) # sorts by service date
         with open('PastServiceDateInventory.csv', 'w', newline = '') as f:
             writer = csv.writer(f)
@@ -77,9 +77,9 @@ class inventoryManager:
                 writer.writerow([itemId, item['manufacturer'], item['itemType'], item['price'], item['serviceDate'].strftime('%m/%d/%Y'), item['damaged']])
 
     def generateDamagedInventory(self): # creates report of damaged items
-        items = [(itemId, item) for itemId, item in self.items.items() it item['damaged']] #creats list of damaged items
+        items = [(itemId, item) for itemId, item in self.items.items() if item['damaged']] #creates list of damaged items
         items = sorted(items, key = lambda x: x[1]['price'], reverse = True) # sorts by price 
-        with open('DamagededInventory.csv', 'w', newline = '') as f:
+        with open('DamagedInventory.csv', 'w', newline = '') as f:
             writer = csv.writer(f)
             for itemId, item in items: #iterates over items and writes to csv file
                 writer.writerow([itemId, item['manufacturer'], item['itemType'], item['price'], item['serviceDate'].strftime('%m/%d/%Y')])
